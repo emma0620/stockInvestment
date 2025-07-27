@@ -15,13 +15,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://rate.bot.com.tw',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/xrt/flcsv/0/day'),
-        headers: {
-          Referer: 'https://rate.bot.com.tw/xrt/flcsv/0/day',
-          Origin: 'https://rate.bot.com.tw',
-        },
+          target: 'https://rate.bot.com.tw', // 目標伺服器
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/api/, ''),
+
       },
     },
   },
