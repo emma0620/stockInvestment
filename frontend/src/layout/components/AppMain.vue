@@ -1,3 +1,6 @@
+<!-- appmain.vue -->
+
+
 <template>
   <!-- <section class="app-main">
     <router-view v-slot="{ Component, route }">
@@ -20,13 +23,8 @@ const route = useRoute();
 <style scoped>
 .app-main {
   background-color: white;
-  /* min-height: calc(100vh - 100px); */
   width: 100%;
   position: relative;
   overflow: hidden;
-}
-
-.fixed-header + .app-main {
-  padding-top: 50px;
 }
 </style>

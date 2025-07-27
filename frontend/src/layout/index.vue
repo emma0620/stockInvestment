@@ -1,28 +1,21 @@
-<template>
-  <div class="layout">
-    <Navbar @menu-click="handleMenuClick" />
+  <!--layout index.vue -->
 
-      <div class="app-main-container">
+<template>
+  <div class="app-main-containe">
+    <!-- Navbar 現在處於全寬的容器中 -->
+    <Navbar class="nav" @menu-click="handleMenuClick" />
         <AppMain />
-      </div>
-    
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import Navbar from "./components/Navbar.vue"; 
+import { useRouter } from "vue-router";
+import Navbar from "./components/Navbar.vue";
 import AppMain from "./components/AppMain.vue";
 
 const router = useRouter();
-const route = useRoute();
- 
-
-const currentMenu = ref("1"); // 預設選中第一個菜單項目
 
 const handleMenuClick = (index) => {
-  currentMenu.value = index;
   switch (index) {
     case "1":
       router.push("/dashboard");
@@ -33,9 +26,9 @@ const handleMenuClick = (index) => {
     case "3":
       router.push("/rate");
       break;
-      case "4":
-       router.push("/about");
-        break;
+    case "4":
+      router.push("/about");
+      break;
     // case "5":
     //   router.push("/settings");
     //   break;
@@ -46,20 +39,33 @@ const handleMenuClick = (index) => {
 <style scoped>
 .layout {
   display: flex;
-  flex-direction: column; /* 將 Navbar 和 main-container 垂直排列 */
-  min-height: 100vh;
+  flex-direction: column;
+  min-height: 100vh; /* 確保佈局至少和視窗一樣高 */
 }
 
-.main-container {
-  display: flex; /* 將 Sidebar 和 app-main-container 水平排列 */
-  flex-grow: 1; /* 讓 main-container 佔據剩餘的垂直空間 */
-  background-color: #ededfc;
+/* 將 Navbar 固定在頂部 */
+.nav {
+  position: fixed; /* 改為 fixed，相對於視窗定位 */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000; /* 確保在最上層 */
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%; /* 明確設定寬度為100% */
 }
 
+/* 主要內容區域 */
+.main-content {
+  flex-grow: 1; /* 讓內容區塊可以伸展，填滿剩餘高度 */
+  padding-top: 60px; /* **非常重要**：這個值要約等於 Navbar 的高度，防止內容被遮擋 */
+  background-color: #ededfc; /* 您可以換成任何您喜歡的背景色 */
+}
 
 .app-main-container {
   flex-grow: 1; /* 讓 AppMain 佔據剩餘的水平空間 */
   /* 你可以根據需要添加 AppMain 內容的 padding */
   padding: 20px; /* 這是一個範例 padding，請根據你的設計調整 */
+  width: 100%;
 }
 </style>
