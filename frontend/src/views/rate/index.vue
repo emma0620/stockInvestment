@@ -23,7 +23,7 @@
 
       <!-- 右欄：包含計算機和圖表 -->
       <el-col :span="18">
-        <!-- 右上：匯率試算 (結構保持不變) -->
+        <!-- 右上：匯率試算 -->
         <div class="calculator-section">
           <!-- ... 您的匯率試算表單 ... -->
           <h3 class="section-title">匯率試算</h3>
@@ -173,11 +173,10 @@ const performCalculation = () => {
     calculator.result = (amountInTwd / toRateInfo.rate).toFixed(4);
 };
 
-// --- **fetchChartData 函式重構** ---
 const fetchChartData = async () => {
 
   if (chartPeriod.value === 'CUSTOM' && !selectedDate.value) {
-    initChart([], [], []); // 清空圖表
+    initChart([], [], []);
     return;
   }
   if (selectedCurrency.value === 'TWD') {
@@ -187,19 +186,19 @@ const fetchChartData = async () => {
 
   chartLoading.value = true;
 
-  // 1. 根據 chartPeriod 動態決定 API 路徑的期間部分
+
   let periodPath = '';
   switch (chartPeriod.value) {
     case '1M':
     case '3M':
-      periodPath = 'L3M'; // 近一個月和三個月都抓三個月的資料
+      periodPath = 'L3M';
       break;
     case '6M':
       periodPath = 'L6M';
       break;
 
     case 'CUSTOM':
-      periodPath = selectedDate.value; // 使用 YYYY-MM 格式的日期
+      periodPath = selectedDate.value;
       break;
   }
 
@@ -234,14 +233,13 @@ const fetchChartData = async () => {
     buyRates.reverse();
     sellRates.reverse();
 
-    // 2. 如果是"近一個月"，則在前端篩選出最近 30 筆資料
-    if (chartPeriod.value === '1M') {
+      if (chartPeriod.value === '1M') {
       dates = dates.slice(-30);
       buyRates = buyRates.slice(-30);
       sellRates = sellRates.slice(-30);
     }
 
-    // 3. 將最終處理好的資料傳給繪圖函式
+
     initChart(dates, buyRates, sellRates);
 
   } catch (err) {
@@ -253,7 +251,7 @@ const fetchChartData = async () => {
 };
 
 
-// 5. 初始化或更新 ECharts 圖表 (此函式不需變更)
+
 const initChart = (dates, buyRates, sellRates) => {
   const option = {
     tooltip: { trigger: 'axis' },
@@ -274,31 +272,28 @@ const initChart = (dates, buyRates, sellRates) => {
 };
 
 
-// --- 事件處理與生命週期 ---
+
 const handleCurrencySelect = (row) => {
   if (row.currency) selectedCurrency.value = row.currency;
 };
 
 const disabledDateHandler = (time) => {
-  // `time` 是日期選擇器面板上每一個月份的 Date 物件
 
-  // 條件一：禁用 2024 年 1 月 1 日之前的日期
   const startOf2024 = new Date('2024-01-01');
   if (time.getTime() < startOf2024.getTime()) {
     return true;
   }
 
-  // 條件二：禁用未來的月份 (使用 Date.now() 獲取當前時間的時間戳)
   if (time.getTime() > Date.now()) {
     return true;
   }
 
-  // 如果以上條件都不滿足，則不禁用
+
   return false;
 };
 
 onMounted(async () => {
-  // 設定預設的指定月份為當前月份
+
   const now = new Date();
   selectedDate.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -313,13 +308,13 @@ watch(selectedCurrency, (newVal, oldVal) => {
 </script>
 
 <style scoped>
-/* ...您現有的 style... */
+
 .section-title { color: rgb(75, 75, 75); border-bottom: 2px solid #D1AEAD; padding-bottom: 8px; margin-bottom: 16px; font-size: 1.1rem; font-weight: 600; }
-.calculator-section { min-height: 200px; } /* 給計算機一個最小高度 */
+.calculator-section { min-height: 200px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; }
 .disclaimer { font-size: 0.75rem; color: #999; margin-top: 10px; }
 .inline-form-item { margin-bottom: 0; }
-/* 新增的 style */
+
 .period-selector {
   display: flex;
   align-items: center;

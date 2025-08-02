@@ -10,13 +10,13 @@
       {{ error }}
     </div>
 
-    <!-- 將 v-show 改成 v-if -->
+
     <div v-if="!isLoading && !error" ref="chartDom" style="width: 100%; height: 400px;"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'; // 1. 引入 nextTick
+import { ref, onMounted, nextTick } from 'vue';
 import { getMarketChart } from '@/api/coingecko.js';
 import * as echarts from 'echarts';
 
@@ -33,14 +33,14 @@ onMounted(async () => {
     });
     const prices = response.data.prices.map(item => item[1]);
 
-    // 關鍵更動：資料準備好後，先更新狀態，讓 v-if 生效
+
     isLoading.value = false;
 
-    // 2. 等待 Vue 根據 isLoading = false 更新完畫面 (div 出現了)
+
     await nextTick();
 
-    // 3. 此時 chartDom.value 絕對存在且可見，可以安全地初始化 ECharts
-    if (!chartDom.value) return; // 做個安全檢查
+
+    if (!chartDom.value) return;
 
     const myChart = echarts.init(chartDom.value);
     const option = {
@@ -59,7 +59,7 @@ onMounted(async () => {
   } catch (err) {
     console.error("無法取得圖表資料:", err);
     error.value = '無法取得圖表資料，請稍後再試。';
-    // 如果出錯，也要關閉載入狀態以顯示錯誤訊息
+
     isLoading.value = false;
   }
 });
