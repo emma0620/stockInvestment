@@ -1,4 +1,5 @@
 <template>
+  <h1> stock 建構中</h1>
   <div class="mt-4">
     <Crypto />
   </div>

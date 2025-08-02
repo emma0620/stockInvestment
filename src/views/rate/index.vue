@@ -25,7 +25,6 @@
       <el-col :span="18">
         <!-- 右上：匯率試算 -->
         <div class="calculator-section">
-          <!-- ... 您的匯率試算表單 ... -->
           <h3 class="section-title">匯率試算</h3>
           <el-form :model="calculator" label-width="80px" label-position="left">
             <el-row :gutter="10"  >
@@ -63,7 +62,6 @@
         <div class="chart-section" v-loading="chartLoading">
           <div class="chart-header">
             <p class="section-title">歷史匯率走勢 ({{ selectedCurrency }}/TWD)</p>
-            <!-- **UI 修改點** -->
             <div class="period-selector">
               <el-select v-model="chartPeriod" placeholder="選擇期間" @change="fetchChartData" style="width: 120px;">
                 <el-option label="近一個月" value="1M" />
@@ -71,7 +69,6 @@
                 <el-option label="近半年" value="6M" />
                 <el-option label="指定月份" value="CUSTOM" />
               </el-select>
-              <!-- 只有當選擇"指定月份"時才顯示日期選擇器 -->
               <el-date-picker
                 v-if="chartPeriod === 'CUSTOM'"
                 v-model="selectedDate"
@@ -92,38 +89,53 @@
   </el-card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, reactive, watch, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import axios from 'axios';
 import * as echarts from 'echarts';
+import type { ECharts } from 'echarts';
 
+// --- 型別定義 (Type Definitions) ---
+interface Rate {
+  country: string;
+  currency_zh: string;
+  currency: string;
+  rate: number;
+}
 
+interface Calculator {
+  amount: number;
+  from: string;
+  to: string;
+  result: string | null;
+}
 
-const rates = ref([]);
-const loading = ref(true);
-const calculator = reactive({ amount: 1, from: 'USD', to: 'TWD', result: null });
-const selectedCurrency = ref('USD');
+type ChartPeriod = '1M' | '3M' | '6M' | 'CUSTOM';
 
+// --- 響應式狀態 (Reactive States) ---
+const rates = ref<Rate[]>([]);
+const loading = ref<boolean>(true);
+const calculator = reactive<Calculator>({ amount: 1, from: 'USD', to: 'TWD', result: null });
+const selectedCurrency = ref<string>('USD');
 
-const chartPeriod = ref('1M');
+const chartPeriod = ref<ChartPeriod>('1M');
+const selectedDate = ref<string>('');
 
-const selectedDate = ref('');
+const chartDom = ref<HTMLElement | null>(null);
+let chartInstance: ECharts | null = null;
+const chartLoading = ref<boolean>(false);
 
-const chartDom = ref(null);
-let chartInstance = null;
-const chartLoading = ref(false);
-
-const currencyToCountry = {
+const currencyToCountry: Record<string, [string, string]> = {
   USD: ['United States of America', '美金'], HKD: ['Hong Kong', '港幣'], GBP: ['United Kingdom', '英鎊'], AUD: ['Australia', '澳幣'], CAD: ['Canada', '加拿大幣'], SGD: ['Singapore', '新加坡幣'], CHF: ['Switzerland', '瑞士法郎'], JPY: ['Japan', '日圓'], ZAR: ['South Africa', '南非幣'], SEK: ['Sweden', '瑞典幣'], NZD: ['New Zealand', '紐元'], THB: ['Thailand', '泰幣'], PHP: ['Philippines', '菲國比索'], IDR: ['Indonesia', '印尼幣'], EUR: ['Eurozone', '歐元'], KRW: ['South Korea', '韓元'], VND: ['Vietnam', '越南盾'], MYR: ['Malaysia', '馬來幣'], CNY: ['China', '人民幣'], TWD: ['Taiwan', '台幣'],
 };
 
 // --- 方法 (Functions) ---
 
-const parseCSV = (csvText) => {
+const parseCSV = (csvText: string): Rate[] => {
   const lines = csvText.trim().split('\n');
   lines.shift();
-  const result = [];
+  const result: Rate[] = [];
   for (const line of lines) {
     const data = line.split(',');
     if (data.length < 13) continue;
@@ -145,20 +157,25 @@ const parseCSV = (csvText) => {
   return result.sort((a, b) => a.currency.localeCompare(b.currency));
 };
 
-const fetchRates = async () => {
+const API_BASE_URL: string = import.meta.env.PROD
+  ? 'https://api.allorigins.win/raw?url=https://rate.bot.com.tw' // 生產環境
+  : '/api'; // 開發環境
+
+const fetchRates = async (): Promise<void> => {
   loading.value = true;
   try {
-   const res = await fetch('/api/xrt/flcsv/0/day');
+    const res = await fetch(`${API_BASE_URL}/xrt/flcsv/0/day`);
     if (!res.ok) throw new Error('台灣銀行網站無法取得資料');
-    rates.value = parseCSV(await res.text());
-  } catch (err) {
-    ElMessage.error(err.message);
+    const textData = await res.text();
+    rates.value = parseCSV(textData);
+  } catch (err: any) {
+    ElMessage.error(err.message || '發生未知錯誤');
   } finally {
     loading.value = false;
   }
 };
 
-const performCalculation = () => {
+const performCalculation = (): void => {
     if(!calculator.amount){
         ElMessage.warning('請輸入金額');
         return;
@@ -173,8 +190,7 @@ const performCalculation = () => {
     calculator.result = (amountInTwd / toRateInfo.rate).toFixed(4);
 };
 
-const fetchChartData = async () => {
-
+const fetchChartData = async (): Promise<void> => {
   if (chartPeriod.value === 'CUSTOM' && !selectedDate.value) {
     initChart([], [], []);
     return;
@@ -186,7 +202,6 @@ const fetchChartData = async () => {
 
   chartLoading.value = true;
 
-
   let periodPath = '';
   switch (chartPeriod.value) {
     case '1M':
@@ -196,25 +211,23 @@ const fetchChartData = async () => {
     case '6M':
       periodPath = 'L6M';
       break;
-
     case 'CUSTOM':
       periodPath = selectedDate.value;
       break;
   }
 
-  const url = `/api/xrt/flcsv/0/${periodPath}/${selectedCurrency.value}`;
-
+   const url = `${API_BASE_URL}/xrt/flcsv/0/${periodPath}/${selectedCurrency.value}`;
   try {
-    const response = await axios.get(url);
+    const response = await axios.get<string>(url);
     const csvText = response.data;
     if (!csvText) throw new Error('API未返回任何資料');
 
     const lines = csvText.trim().split('\n');
     lines.shift();
 
-    let dates = [];
-    let buyRates = [];
-    let sellRates = [];
+    let dates: string[] = [];
+    let buyRates: number[] = [];
+    let sellRates: number[] = [];
 
     for (const line of lines) {
       const columns = line.split(',');
@@ -233,26 +246,25 @@ const fetchChartData = async () => {
     buyRates.reverse();
     sellRates.reverse();
 
-      if (chartPeriod.value === '1M') {
-      dates = dates.slice(-30);
-      buyRates = buyRates.slice(-30);
-      sellRates = sellRates.slice(-30);
+    if (chartPeriod.value === '1M') {
+      const thirtyDays = 30;
+      dates = dates.slice(-thirtyDays);
+      buyRates = buyRates.slice(-thirtyDays);
+      sellRates = sellRates.slice(-thirtyDays);
     }
 
-
     initChart(dates, buyRates, sellRates);
-
-  } catch (err) {
-    ElMessage.error(`無法獲取 ${selectedCurrency.value} 的歷史資料`);
+  } catch (err: any) {
+    ElMessage.error(`無法獲取 ${selectedCurrency.value} 的歷史資料: ${err.message}`);
     initChart([], [], []);
   } finally {
     chartLoading.value = false;
   }
 };
 
+const initChart = (dates: string[], buyRates: number[], sellRates: number[]): void => {
+  if (!chartDom.value) return;
 
-
-const initChart = (dates, buyRates, sellRates) => {
   const option = {
     tooltip: { trigger: 'axis' },
     legend: { data: ['現金買入', '現金賣出'] },
@@ -266,55 +278,67 @@ const initChart = (dates, buyRates, sellRates) => {
   };
 
   nextTick(() => {
-      if (!chartInstance) chartInstance = echarts.init(chartDom.value);
+      if (!chartInstance) {
+        chartInstance = echarts.init(chartDom.value as HTMLElement);
+      }
       chartInstance.setOption(option, true);
   });
 };
 
-
-
-const handleCurrencySelect = (row) => {
-  if (row.currency) selectedCurrency.value = row.currency;
+const handleCurrencySelect = (row: Rate): void => {
+  if (row.currency) {
+    selectedCurrency.value = row.currency;
+  }
 };
 
-const disabledDateHandler = (time) => {
-
+const disabledDateHandler = (time: Date): boolean => {
   const startOf2024 = new Date('2024-01-01');
-  if (time.getTime() < startOf2024.getTime()) {
-    return true;
-  }
-
-  if (time.getTime() > Date.now()) {
-    return true;
-  }
-
-
-  return false;
+  return time.getTime() < startOf2024.getTime() || time.getTime() > Date.now();
 };
 
 onMounted(async () => {
-
   const now = new Date();
   selectedDate.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   await fetchRates();
   await fetchChartData();
-  window.addEventListener('resize', () => chartInstance?.resize());
+
+  const resizeHandler = () => chartInstance?.resize();
+  window.addEventListener('resize', resizeHandler);
 });
 
 watch(selectedCurrency, (newVal, oldVal) => {
-  if (newVal !== oldVal) fetchChartData();
+  if (newVal !== oldVal) {
+    fetchChartData();
+  }
 });
 </script>
 
 <style scoped>
-
-.section-title { color: rgb(75, 75, 75); border-bottom: 2px solid #D1AEAD; padding-bottom: 8px; margin-bottom: 16px; font-size: 1.1rem; font-weight: 600; }
-.calculator-section { min-height: 200px; }
-.chart-header { display: flex; justify-content: space-between; align-items: center; }
-.disclaimer { font-size: 0.75rem; color: #999; margin-top: 10px; }
-.inline-form-item { margin-bottom: 0; }
-
+.section-title {
+  color: rgb(75, 75, 75);
+  border-bottom: 2px solid #D1AEAD;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.calculator-section {
+  min-height: 200px;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.disclaimer {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 10px;
+}
+.inline-form-item {
+  margin-bottom: 0;
+}
 .period-selector {
   display: flex;
   align-items: center;

@@ -8,32 +8,29 @@
   </div>
 </template>
 
-<script setup>
-import { useRouter } from "vue-router";
-import Navbar from "./components/Navbar.vue";
-import AppMain from "./components/AppMain.vue";
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import Navbar from './components/Navbar.vue'
+import AppMain from './components/AppMain.vue'
 
-const router = useRouter();
+const router = useRouter()
 
-const handleMenuClick = (index) => {
+const handleMenuClick = (index: string) => {
   switch (index) {
-    case "1":
-      router.push("/dashboard");
-      break;
-    case "2":
-      router.push("/stock");
-      break;
-    case "3":
-      router.push("/rate");
-      break;
-    case "4":
-      router.push("/about");
-      break;
-    // case "5":
-    //   router.push("/settings");
-    //   break;
+    case '1':
+      router.push('/dashboard')
+      break
+    case '2':
+      router.push('/stock')
+      break
+    case '3':
+      router.push('/rate')
+      break
+    case '4':
+      router.push('/about')
+      break
   }
-};
+}
 </script>
 
 <style scoped>
