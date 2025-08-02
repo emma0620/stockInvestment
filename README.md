@@ -1,4 +1,4 @@
-# 財經投資儀表板 (Financial Dashboard)
+# 投資儀表板 (Investment Dashboard) 開發中
 
 ![Work in Progress](https://img.shields.io/badge/status-work%20in%20progress-yellow)
 
